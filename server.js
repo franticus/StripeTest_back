@@ -53,9 +53,9 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: 'Test Product',
+              name: 'Prod Product',
             },
-            unit_amount: 5000,
+            unit_amount: 10,
           },
           quantity: 1,
         },
