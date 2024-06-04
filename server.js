@@ -61,7 +61,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: 'https://stripetestiq.netlify.app/success.html',
+      success_url: 'https://iqmaze.netlify.app/#/thanks',
       cancel_url: 'https://stripetestiq.netlify.app/cancel.html',
     });
 
