@@ -55,7 +55,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
             product_data: {
               name: 'Test Product',
             },
-            unit_amount: 5000, // Изменила на 5000 для большего значения
+            unit_amount: 5000,
           },
           quantity: 1,
         },
@@ -73,7 +73,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
