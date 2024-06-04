@@ -10,6 +10,13 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+app.use(express.static(path.join(__dirname, '../')));
+
+// Endpoint to retrieve the API key
+app.get('/get-api-key', (req, res) => {
+  res.json({ apiKey: process.env.MY_API_KEY });
+});
+
 const validateApiKey = (req, res, next) => {
   const apiKey = req.headers.authorization;
 
@@ -30,11 +37,7 @@ const validateApiKey = (req, res, next) => {
   next();
 };
 
-app.use(validateApiKey);
-
-app.use(express.static(path.join(__dirname, '../')));
-
-app.post('/create-checkout-session', async (req, res) => {
+app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -54,14 +57,14 @@ app.post('/create-checkout-session', async (req, res) => {
       success_url: 'https://stripetestiq.netlify.app/success.html',
       cancel_url: 'https://stripetestiq.netlify.app/cancel.html',
     });
+
     res.json({ id: session.id });
   } catch (error) {
-    res.status(500).send(error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.get('/get-api-key', (req, res) => {
-  res.json({ apiKey: process.env.MY_API_KEY });
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-
-app.listen(4242, () => console.log('Server is running on port 4242'));
