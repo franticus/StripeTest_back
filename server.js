@@ -21,17 +21,17 @@ const validateApiKey = (req, res, next) => {
   const apiKey = req.headers.authorization;
 
   if (!apiKey) {
-    return res.status(401).send('Authorization header is missing');
+    return res.status(401).send('Authorization header is missing (server)');
   }
 
   if (!apiKey.startsWith('Bearer ')) {
-    return res.status(401).send('Invalid authorization format');
+    return res.status(401).send('Invalid authorization format (server)');
   }
 
   const apiKeyValue = apiKey.split(' ')[1];
 
   if (apiKeyValue !== process.env.MY_API_KEY) {
-    return res.status(403).send('Invalid API key');
+    return res.status(403).send('Invalid API key (server)');
   }
 
   next();
@@ -64,7 +64,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
