@@ -1,10 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const stripe = require('stripe')(
-  'sk_test_51PNcn6RrQfUQC5MYHmijfhkmzrc3EkabCo25fq2GZckqew0Ku5ItAxpcfnuUkkhMcCsSexTLtMzXdOYPhvrJdKBM00x7WEywQB'
-); // Замените на ваш тестовый секретный ключ
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 app.use(cors());
