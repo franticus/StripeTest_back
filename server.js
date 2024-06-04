@@ -30,7 +30,7 @@ app.post('/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: 'https://stripetestiq.netlify.app/success',
+      success_url: 'https://stripetestiq.netlify.app/success.html',
       cancel_url: 'https://stripetestiq.netlify.app/cancel.html',
     });
     res.json({ id: session.id });
