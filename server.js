@@ -12,6 +12,15 @@ app.use(bodyParser.json());
 
 app.use(express.static(path.join(__dirname, '../')));
 
+// Middleware для установки куки с атрибутами SameSite=None и Secure
+app.use((req, res, next) => {
+  res.cookie('cookieName', 'cookieValue', {
+    sameSite: 'None', // Позволяет использовать куки в кросс-сайтовом контексте
+    secure: true, // Требует HTTPS для передачи куки
+  });
+  next();
+});
+
 // Endpoint to retrieve the API key
 app.get('/get-api-key', (req, res) => {
   console.log('Request received to get API key');
