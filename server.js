@@ -64,13 +64,13 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
             product_data: {
               name: 'IQTest Results',
             },
-            unit_amount: 100,
+            unit_amount: 1990,
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: 'https://iqmaze.netlify.app/#/thanks',
+      success_url: 'https://iq-check140.com/#/thanks',
       cancel_url: 'https://stripetestiq.netlify.app/cancel.html',
     });
 
