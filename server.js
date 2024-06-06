@@ -67,7 +67,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
             product_data: {
               name: 'IQTest Results',
             },
-            unit_amount: 1990,
+            unit_amount: 190,
           },
           quantity: 1,
         },
