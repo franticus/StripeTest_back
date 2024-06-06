@@ -74,7 +74,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       ],
       mode: 'payment',
       success_url: 'https://iq-check140.com/#/thanks',
-      cancel_url: 'https://stripetestiq.netlify.app/cancel.html',
+      cancel_url: 'https://iq-check140.com/#/paywall',
     });
 
     console.log('Checkout session created successfully');
