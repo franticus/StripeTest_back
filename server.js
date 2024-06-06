@@ -55,8 +55,11 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
     console.log('Creating checkout session');
 
+    const { email } = req.body;
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      customer_email: email, // Добавление email клиента в сессию
       line_items: [
         {
           price_data: {
