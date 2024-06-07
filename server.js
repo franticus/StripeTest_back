@@ -52,36 +52,20 @@ const validateApiKey = (req, res, next) => {
   next();
 };
 
-app.post('/create-checkout-session', validateApiKey, async (req, res) => {
+// Endpoint to create a payment intent
+app.post('/create-payment-intent', validateApiKey, async (req, res) => {
   try {
-    console.log('Creating checkout session');
+    const { amount, currency } = req.body;
 
-    const { email } = req.body;
-
-    const session = await stripe.checkout.sessions.create({
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount,
+      currency: currency,
       payment_method_types: ['card'],
-      customer_email: email,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'IQTest Results',
-            },
-            unit_amount: 190,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${urlDEV}/#/thanks`,
-      cancel_url: `${urlDEV}/#/paywall`,
     });
 
-    console.log('Checkout session created successfully');
-    res.json({ id: session.id });
+    res.json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
-    console.error('Error creating checkout session:', error.message);
+    console.error('Error creating payment intent:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
