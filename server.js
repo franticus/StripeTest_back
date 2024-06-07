@@ -4,7 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY_DEV);
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const url = 'https://iq-check140.com';
 const urlDEV = 'https://iqmaze.netlify.app';
 
