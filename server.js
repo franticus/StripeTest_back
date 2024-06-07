@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY_DEV);
+const url = 'https://iq-check140.com';
+const urlDEV = 'https://iqmaze.netlify.app';
 
 const app = express();
 app.use(cors());
@@ -12,11 +14,10 @@ app.use(bodyParser.json());
 
 app.use(express.static(path.join(__dirname, '../')));
 
-// Middleware для установки куки с атрибутами SameSite=None и Secure
 app.use((req, res, next) => {
   res.cookie('cookieName', 'cookieValue', {
-    sameSite: 'None', // Позволяет использовать куки в кросс-сайтовом контексте
-    secure: true, // Требует HTTPS для передачи куки
+    sameSite: 'None',
+    secure: true,
   });
   next();
 });
@@ -59,7 +60,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      customer_email: email, // Добавление email клиента в сессию
+      customer_email: email,
       line_items: [
         {
           price_data: {
@@ -73,8 +74,8 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: 'https://iq-check140.com/#/thanks',
-      cancel_url: 'https://iq-check140.com/#/paywall',
+      success_url: `${urlDEV}/#/thanks`,
+      cancel_url: `${urlDEV}/#/paywall`,
     });
 
     console.log('Checkout session created successfully');
