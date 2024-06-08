@@ -4,13 +4,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const url = 'https://iq-check140.com';
-const urlDEV = 'https://iqmaze.netlify.app';
-
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+const stripeLive = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripeDev = require('stripe')(process.env.STRIPE_SECRET_KEY_DEV);
 
 app.use(express.static(path.join(__dirname, '../')));
 
@@ -56,6 +55,10 @@ const validateApiKey = (req, res, next) => {
 app.post('/create-payment-intent', validateApiKey, async (req, res) => {
   try {
     const { amount, currency } = req.body;
+
+    const stripe = req.headers.origin.includes('iq-check140.com')
+      ? stripeLive
+      : stripeDev;
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
