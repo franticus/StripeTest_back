@@ -76,7 +76,7 @@ app.post('/create-payment-intent', validateApiKey, async (req, res) => {
 // Endpoint to create a checkout session
 app.post('/create-checkout-session', async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, email } = req.body; // email из запроса
 
     const stripe = req.headers.origin.includes('iq-check140.com')
       ? stripeLive
@@ -89,7 +89,7 @@ app.post('/create-checkout-session', async (req, res) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: 'IQ Test',
+              name: 'IQ Test Results - Single Purchase',
             },
             unit_amount: amount,
           },
@@ -99,6 +99,7 @@ app.post('/create-checkout-session', async (req, res) => {
       mode: 'payment',
       success_url: `${req.headers.origin}/#/thanks`,
       cancel_url: `${req.headers.origin}/#/paywall`,
+      customer_email: email,
     });
 
     res.json({ id: session.id });
