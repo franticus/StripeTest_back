@@ -63,7 +63,7 @@ app.post('/create-payment-intent', validateApiKey, async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency,
-      payment_method_types: ['card', 'google_pay', 'apple_pay'],
+      payment_method_types: ['card'],
     });
 
     res.json({ clientSecret: paymentIntent.client_secret });
