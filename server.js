@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 const stripeLive = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const stripeDev = require('stripe')(process.env.STRIPE_SECRET_KEY_DEV);
 
-app.use(express.static(path.join(__dirname, '../')));
+app.use(express.static(path.join(__dirname, '../client/build')));
 
 app.use((req, res, next) => {
   res.cookie('cookieName', 'cookieValue', {
