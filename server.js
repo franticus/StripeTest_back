@@ -74,9 +74,9 @@ app.post('/create-payment-intent', validateApiKey, async (req, res) => {
 });
 
 // Endpoint to create a checkout session
-app.post('/create-checkout-session', async (req, res) => {
+app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
-    const { amount, email } = req.body; // email из запроса
+    const { amount, email } = req.body;
 
     const stripe = req.headers.origin.includes('iq-check140.com')
       ? stripeLive
