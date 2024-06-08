@@ -97,8 +97,8 @@ app.post('/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: `${req.headers.origin}/success`,
-      cancel_url: `${req.headers.origin}/cancel`,
+      success_url: `${req.headers.origin}/#/thanks`,
+      cancel_url: `${req.headers.origin}/#/paywall`,
     });
 
     res.json({ id: session.id });
