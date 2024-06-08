@@ -73,6 +73,41 @@ app.post('/create-payment-intent', validateApiKey, async (req, res) => {
   }
 });
 
+// Endpoint to create a checkout session
+app.post('/create-checkout-session', async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    const stripe = req.headers.origin.includes('iq-check140.com')
+      ? stripeLive
+      : stripeDev;
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card', 'apple_pay', 'google_pay'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'IQ Test',
+            },
+            unit_amount: amount,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${req.headers.origin}/success`,
+      cancel_url: `${req.headers.origin}/cancel`,
+    });
+
+    res.json({ id: session.id });
+  } catch (error) {
+    console.error('Error creating checkout session:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
