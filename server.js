@@ -135,32 +135,10 @@ const validateApiKey = (req, res, next) => {
   next();
 };
 
-// Endpoint to create a payment intent
-app.post('/create-payment-intent', validateApiKey, async (req, res) => {
-  try {
-    const { amount, currency } = req.body;
-
-    const stripe = req.headers.origin.includes('iq-check140.com')
-      ? stripeLive
-      : stripeDev;
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
-      currency: currency,
-      payment_method_types: ['card'],
-    });
-
-    res.json({ clientSecret: paymentIntent.client_secret });
-  } catch (error) {
-    console.error('Error creating payment intent:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Endpoint to create a checkout session
 app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
-    const { amount, email, userId } = req.body;
+    const { email, userId } = req.body;
 
     const stripe = req.headers.origin.includes('iq-check140.com')
       ? stripeLive
@@ -170,11 +148,11 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: 'price_1PQ8NfBbDeRYiB9tRjkx9Mcf', // Идентификатор цены
+          price: 'price_1PQ8NfBbDeRYiB9tRjkx9Mcf',
           quantity: 1,
         },
       ],
-      mode: 'subscription', // Измените на 'subscription'
+      mode: 'subscription',
       success_url: `${req.headers.origin}/#/thanks`,
       cancel_url: `${req.headers.origin}/#/paywall`,
       customer_email: email,
@@ -191,7 +169,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       product_data,
       session.subscription,
       'pending',
-      amount,
+      session.amount_total,
       'usd',
       session.client_secret,
       session.id
