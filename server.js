@@ -24,7 +24,7 @@ app.use((req, res, next) => {
 });
 
 // Подключение к базе данных SQLite
-const dbPath = path.resolve(__dirname, 'data/database.sqlite');
+const dbPath = path.resolve(__dirname, 'data', 'database.sqlite');
 const db = new sqlite3.Database(dbPath, err => {
   if (err) {
     console.error('Error opening database:', err.message);
