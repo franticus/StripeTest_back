@@ -24,7 +24,14 @@ app.use((req, res, next) => {
 });
 
 // Подключение к базе данных SQLite
-const db = new sqlite3.Database('data/database.sqlite');
+const dbPath = path.resolve(__dirname, 'data/database.sqlite');
+const db = new sqlite3.Database(dbPath, err => {
+  if (err) {
+    console.error('Error opening database:', err.message);
+  } else {
+    console.log('Connected to the SQLite database.');
+  }
+});
 // Создание таблицы пользователей
 db.serialize(() => {
   db.run(
@@ -59,7 +66,12 @@ const addUser = (
   session_id
 ) => {
   const stmt = db.prepare(
-    'INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    err => {
+      if (err) {
+        console.error('Error preparing statement:', err.message);
+      }
+    }
   );
   stmt.run(
     id,
@@ -72,14 +84,26 @@ const addUser = (
     amount,
     currency,
     client_secret,
-    session_id
+    session_id,
+    err => {
+      if (err) {
+        console.error('Error inserting user:', err.message);
+      }
+    }
   );
-  stmt.finalize();
+  stmt.finalize(err => {
+    if (err) {
+      console.error('Error finalizing statement:', err.message);
+    }
+  });
 };
 
 // Функция для получения пользователя по email
 const getUserByEmail = (email, callback) => {
   db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+    if (err) {
+      console.error('Error retrieving user:', err.message);
+    }
     callback(err, row);
   });
 };
