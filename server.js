@@ -32,7 +32,6 @@ const db = new sqlite3.Database(dbPath, err => {
     console.log('Connected to the SQLite database.');
   }
 });
-// Создание таблицы пользователей
 db.serialize(() => {
   db.run(
     `CREATE TABLE IF NOT EXISTS users (
@@ -51,7 +50,6 @@ db.serialize(() => {
   );
 });
 
-// Функция для добавления пользователя в базу данных
 const addUser = (
   id,
   email,
@@ -98,7 +96,6 @@ const addUser = (
   });
 };
 
-// Функция для получения пользователя по email
 const getUserByEmail = (email, callback) => {
   db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
     if (err) {
@@ -173,17 +170,11 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       payment_method_types: ['card'],
       line_items: [
         {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'IQ Test Results - Single Purchase',
-            },
-            unit_amount: amount,
-          },
+          price: 'price_1PQ8NfBbDeRYiB9tRjkx9Mcf', // Идентификатор цены
           quantity: 1,
         },
       ],
-      mode: 'payment',
+      mode: 'subscription', // Измените на 'subscription'
       success_url: `${req.headers.origin}/#/thanks`,
       cancel_url: `${req.headers.origin}/#/paywall`,
       customer_email: email,
@@ -236,7 +227,6 @@ app.post(
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object;
-        // Обновление данных подписки в базе данных
         getUserByEmail(session.customer_email, (err, user) => {
           if (user) {
             db.run(
