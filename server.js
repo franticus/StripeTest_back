@@ -24,12 +24,12 @@ app.use((req, res, next) => {
 });
 
 // Подключение к базе данных SQLite
-const db = new sqlite3.Database('database.sqlite');
-
-// Создание таблицы пользователей
-db.serialize(() => {
-  db.run(
-    `CREATE TABLE IF NOT EXISTS users (
+const db = new sqlite3.Database('data/database.sqlite');
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!(
+  // Создание таблицы пользователей
+  db.serialize(() => {
+    db.run(
+      `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT,
       user_id TEXT,
@@ -42,8 +42,9 @@ db.serialize(() => {
       client_secret TEXT,
       session_id TEXT
     )`
-  );
-});
+    );
+  })
+);
 
 // Функция для добавления пользователя в базу данных
 const addUser = (
