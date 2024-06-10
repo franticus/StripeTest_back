@@ -148,7 +148,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: 'price_1PQ8NfBbDeRYiB9tRjkx9Mcf',
+          price: 'price_1PQBhPRrQfUQC5MYqbQ7MyWh',
           quantity: 1,
         },
       ],
