@@ -24,7 +24,7 @@ app.use((req, res, next) => {
 });
 
 // Подключение к базе данных SQLite
-const dbPath = path.resolve(__dirname, 'data', 'database.sqlite');
+const dbPath = path.resolve(__dirname, '/data', 'database.sqlite');
 const db = new sqlite3.Database(dbPath, err => {
   if (err) {
     console.error('Error opening database:', err.message);
@@ -138,7 +138,7 @@ const validateApiKey = (req, res, next) => {
 // Endpoint to create a checkout session
 app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
-    const { email, userId, priceId } = req.body; // получаем priceId из запроса
+    const { email, userId, priceId } = req.body;
 
     const stripe = req.headers.origin.includes('iq-check140.com')
       ? stripeLive
@@ -148,7 +148,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: priceId, // используем переданный priceId
+          price: priceId,
           quantity: 1,
         },
       ],
