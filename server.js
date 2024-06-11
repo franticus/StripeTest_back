@@ -158,6 +158,8 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       customer_email: email,
     });
 
+    console.log('Created session:', session);
+
     // Сохранение данных пользователя в базу данных
     const date = new Date().toISOString();
     const product_data = JSON.stringify(session.line_items);
