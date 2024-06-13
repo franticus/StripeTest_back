@@ -24,47 +24,78 @@ app.use((req, res, next) => {
 });
 
 // Подключение к базе данных SQLite
-const dbPath = path.resolve(__dirname, '/data', 'database.sqlite');
-const db = new sqlite3.Database(dbPath, err => {
+const dbPathUsers = path.resolve(__dirname, '/data', 'database.sqlite');
+const dbUsers = new sqlite3.Database(dbPathUsers, err => {
   if (err) {
-    console.error('Error opening database:', err.message);
+    console.error('Error opening users database:', err.message);
   } else {
-    console.log('Connected to the SQLite database.');
+    console.log('Connected to the users SQLite database.');
   }
 });
-db.serialize(() => {
-  db.run(
+
+const dbPathBeforeCheckout = path.resolve(
+  __dirname,
+  '/data',
+  'beforeCheckout.sqlite'
+);
+const dbBeforeCheckout = new sqlite3.Database(dbPathBeforeCheckout, err => {
+  if (err) {
+    console.error('Error opening beforeCheckout database:', err.message);
+  } else {
+    console.log('Connected to the beforeCheckout SQLite database.');
+  }
+});
+
+dbUsers.serialize(() => {
+  // dbUsers.run(`DROP TABLE IF EXISTS users`);
+  dbUsers.run(
     `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
-      email TEXT,
-      user_id TEXT,
       date TEXT,
-      product_data TEXT,
-      subscription_id TEXT,
-      payment_status TEXT,
-      amount INTEGER,
+      userName TEXT,
+      email TEXT,
+      payment_method_types TEXT,
+      amount_total INTEGER,
+      amount_subtotal INTEGER,
       currency TEXT,
-      client_secret TEXT,
-      session_id TEXT
+      userId TEXT,
+      iqValue INTEGER,
+      mode TEXT,
+      status TEXT,
+      subscription_id TEXT
+    )`
+  );
+});
+
+dbBeforeCheckout.serialize(() => {
+  dbBeforeCheckout.run(
+    `CREATE TABLE IF NOT EXISTS beforeCheckout (
+      userId TEXT,
+      userName TEXT,
+      email TEXT,
+      date TEXT,
+      iqValue INTEGER
     )`
   );
 });
 
 const addUser = (
   id,
-  email,
-  user_id,
   date,
-  product_data,
-  subscription_id,
-  payment_status,
-  amount,
+  userName,
+  email,
+  payment_method_types,
+  amount_total,
+  amount_subtotal,
   currency,
-  client_secret,
-  session_id
+  userId,
+  iqValue,
+  mode,
+  status,
+  subscription_id
 ) => {
-  const stmt = db.prepare(
-    'INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  const stmt = dbUsers.prepare(
+    'INSERT INTO users (id, date, userName, email, payment_method_types, amount_total, amount_subtotal, currency, userId, iqValue, mode, status, subscription_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     err => {
       if (err) {
         console.error('Error preparing statement:', err.message);
@@ -73,16 +104,18 @@ const addUser = (
   );
   stmt.run(
     id,
-    email,
-    user_id,
     date,
-    product_data,
-    subscription_id,
-    payment_status,
-    amount,
+    userName,
+    email,
+    JSON.stringify(payment_method_types),
+    amount_total,
+    amount_subtotal,
     currency,
-    client_secret,
-    session_id,
+    userId,
+    iqValue,
+    mode,
+    status,
+    subscription_id,
     err => {
       if (err) {
         console.error('Error inserting user:', err.message);
@@ -96,8 +129,29 @@ const addUser = (
   });
 };
 
+const addBeforeCheckout = (userId, userName, email, date, iqValue) => {
+  const stmt = dbBeforeCheckout.prepare(
+    'INSERT INTO beforeCheckout (userId, userName, email, date, iqValue) VALUES (?, ?, ?, ?, ?)',
+    err => {
+      if (err) {
+        console.error('Error preparing statement:', err.message);
+      }
+    }
+  );
+  stmt.run(userId, userName, email, date, iqValue, err => {
+    if (err) {
+      console.error('Error inserting user before checkout:', err.message);
+    }
+  });
+  stmt.finalize(err => {
+    if (err) {
+      console.error('Error finalizing statement:', err.message);
+    }
+  });
+};
+
 const getUserByEmail = (email, callback) => {
-  db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+  dbUsers.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
     if (err) {
       console.error('Error retrieving user:', err.message);
     }
@@ -138,7 +192,7 @@ const validateApiKey = (req, res, next) => {
 // Endpoint to create a checkout session
 app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
-    const { email, userId, priceId } = req.body;
+    const { email, userId, priceId, iqValue, userName } = req.body;
 
     const stripe = req.headers.origin.includes('iq-check140.com')
       ? stripeLive
@@ -162,19 +216,20 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
 
     // Сохранение данных пользователя в базу данных
     const date = new Date().toISOString();
-    const product_data = JSON.stringify(session.line_items);
     addUser(
       session.id,
-      email,
-      userId,
       date,
-      product_data,
-      session.subscription,
-      'pending',
+      userName,
+      email,
+      session.payment_method_types,
       session.amount_total,
-      'usd',
-      session.client_secret,
-      session.id
+      session.amount_subtotal,
+      session.currency,
+      userId,
+      iqValue,
+      session.mode,
+      session.status,
+      session.subscription
     );
 
     res.json({ id: session.id });
@@ -213,7 +268,7 @@ app.post(
         const session = event.data.object;
         getUserByEmail(session.customer_email, (err, user) => {
           if (user) {
-            db.run(
+            dbUsers.run(
               'UPDATE users SET subscription_id = ?, payment_status = ? WHERE email = ?',
               [session.subscription, 'completed', session.customer_email]
             );
@@ -227,6 +282,15 @@ app.post(
     response.sendStatus(200);
   }
 );
+
+// Endpoint to save before checkout data
+app.post('/before-checkout', (req, res) => {
+  const { userId, userName, email, date, iqValue } = req.body;
+
+  addBeforeCheckout(userId, userName, email, date, iqValue);
+
+  res.status(200).send('User data saved before checkout');
+});
 
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
