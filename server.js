@@ -289,17 +289,17 @@ app.post(
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object;
-        console.log(`Session completed: ${JSON.stringify(session)}`); // Логирование сессии
+        console.log(`Session completed: ${JSON.stringify(session)}`);
         getUserByEmail(session.customer_email, (err, user) => {
           if (user) {
-            console.log(`Updating user: ${JSON.stringify(user)}`); // Логирование обновляемого пользователя
+            console.log(`Updating user: ${JSON.stringify(user)}`);
             db.run(
               'UPDATE users SET subscription_id = ?, payment_status = ? WHERE email = ?',
               [
                 session.client_reference_id,
                 'completed',
                 session.customer_email,
-              ], // Использование client_reference_id
+              ],
               err => {
                 if (err) {
                   console.error('Error updating user:', err.message);
