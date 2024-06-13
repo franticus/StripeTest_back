@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 });
 
 // Подключение к базе данных SQLite
-const dbPath = path.resolve(__dirname, '/data', 'database.sqlite');
+const dbPath = path.resolve(__dirname, 'data', 'database.sqlite');
 const db = new sqlite3.Database(dbPath, err => {
   if (err) {
     console.error('Error opening database:', err.message);
@@ -192,6 +192,20 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       ? stripeLive
       : stripeDev;
 
+    // Создание клиента
+    const customer = await stripe.customers.create({
+      email: email,
+      name: userName,
+    });
+
+    // Создание подписки
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [{ price: priceId }],
+      payment_behavior: 'default_incomplete',
+      expand: ['latest_invoice.payment_intent'],
+    });
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -204,6 +218,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       success_url: `${req.headers.origin}/#/thanks`,
       cancel_url: `${req.headers.origin}/#/paywall`,
       customer_email: email,
+      client_reference_id: subscription.id,
     });
 
     console.log('Created session:', session);
@@ -223,7 +238,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       iqValue,
       session.mode,
       session.status,
-      session.subscription
+      subscription.id // Использование ID подписки
     );
 
     res.json({ id: session.id });
@@ -231,6 +246,20 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
     console.error('Error creating checkout session:', error.message);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Endpoint to check subscription
+app.post('/check-subscription', async (req, res) => {
+  const { email } = req.body;
+
+  getUserByEmail(email, (err, user) => {
+    if (err || !user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const hasSubscription = !!user.subscription_id;
+    res.json({ hasSubscription });
+  });
 });
 
 // Endpoint to handle Stripe webhooks
@@ -260,12 +289,27 @@ app.post(
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object;
+        console.log(`Session completed: ${JSON.stringify(session)}`); // Логирование сессии
         getUserByEmail(session.customer_email, (err, user) => {
           if (user) {
+            console.log(`Updating user: ${JSON.stringify(user)}`); // Логирование обновляемого пользователя
             db.run(
               'UPDATE users SET subscription_id = ?, payment_status = ? WHERE email = ?',
-              [session.subscription, 'completed', session.customer_email]
+              [
+                session.client_reference_id,
+                'completed',
+                session.customer_email,
+              ], // Использование client_reference_id
+              err => {
+                if (err) {
+                  console.error('Error updating user:', err.message);
+                } else {
+                  console.log('User updated successfully');
+                }
+              }
             );
+          } else {
+            console.error('User not found');
           }
         });
         break;
