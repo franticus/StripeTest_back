@@ -34,30 +34,17 @@ app.use((req, res, next) => {
 });
 
 // Подключение к базе данных SQLite
-const dbPathUsers = path.resolve(__dirname, '/data', 'database.sqlite');
-const dbUsers = new sqlite3.Database(dbPathUsers, err => {
+const dbPath = path.resolve(__dirname, '/data', 'database.sqlite');
+const db = new sqlite3.Database(dbPath, err => {
   if (err) {
-    console.error('Error opening users database:', err.message);
+    console.error('Error opening database:', err.message);
   } else {
-    console.log('Connected to the users SQLite database.');
+    console.log('Connected to the SQLite database.');
   }
 });
 
-const dbPathBeforeCheckout = path.resolve(
-  __dirname,
-  '/data',
-  'beforeCheckout.sqlite'
-);
-const dbBeforeCheckout = new sqlite3.Database(dbPathBeforeCheckout, err => {
-  if (err) {
-    console.error('Error opening beforeCheckout database:', err.message);
-  } else {
-    console.log('Connected to the beforeCheckout SQLite database.');
-  }
-});
-
-dbUsers.serialize(() => {
-  dbUsers.run(
+db.serialize(() => {
+  db.run(
     `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       date TEXT,
@@ -74,10 +61,8 @@ dbUsers.serialize(() => {
       subscription_id TEXT
     )`
   );
-});
 
-dbBeforeCheckout.serialize(() => {
-  dbBeforeCheckout.run(
+  db.run(
     `CREATE TABLE IF NOT EXISTS beforeCheckout (
       userId TEXT,
       userName TEXT,
@@ -103,7 +88,7 @@ const addUser = (
   status,
   subscription_id
 ) => {
-  const stmt = dbUsers.prepare(
+  const stmt = db.prepare(
     'INSERT INTO users (id, date, userName, email, payment_method_types, amount_total, amount_subtotal, currency, userId, iqValue, mode, status, subscription_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     err => {
       if (err) {
@@ -139,7 +124,7 @@ const addUser = (
 };
 
 const addBeforeCheckout = (userId, userName, email, date, iqValue) => {
-  const stmt = dbBeforeCheckout.prepare(
+  const stmt = db.prepare(
     'INSERT INTO beforeCheckout (userId, userName, email, date, iqValue) VALUES (?, ?, ?, ?, ?)',
     err => {
       if (err) {
@@ -160,7 +145,7 @@ const addBeforeCheckout = (userId, userName, email, date, iqValue) => {
 };
 
 const getUserByEmail = (email, callback) => {
-  dbUsers.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+  db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
     if (err) {
       console.error('Error retrieving user:', err.message);
     }
@@ -277,7 +262,7 @@ app.post(
         const session = event.data.object;
         getUserByEmail(session.customer_email, (err, user) => {
           if (user) {
-            dbUsers.run(
+            db.run(
               'UPDATE users SET subscription_id = ?, payment_status = ? WHERE email = ?',
               [session.subscription, 'completed', session.customer_email]
             );
