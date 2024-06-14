@@ -198,10 +198,11 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       name: userName,
     });
 
-    // Создание подписки
+    // Создание подписки с применением купона на первый платеж
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: priceId }],
+      promotion_code: 'promo_1PRUDpRrQfUQC5MYRNrD9i5x', // Укажите ID вашего купона
       payment_behavior: 'default_incomplete',
       expand: ['latest_invoice.payment_intent'],
     });
@@ -215,6 +216,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
         },
       ],
       mode: 'subscription',
+      discounts: [{ coupon: '28NLdHOO' }], // Укажите ID вашего купона
       success_url: `${req.headers.origin}/#/thanks`,
       cancel_url: `${req.headers.origin}/#/paywall`,
       customer_email: email,
