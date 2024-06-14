@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 });
 
 // Подключение к базе данных SQLite
-const dbPath = path.resolve(__dirname, '/data', 'database.sqlite');
+const dbPath = path.resolve(__dirname, 'data', 'database.sqlite');
 const db = new sqlite3.Database(dbPath, err => {
   if (err) {
     console.error('Error opening database:', err.message);
@@ -43,7 +43,9 @@ const db = new sqlite3.Database(dbPath, err => {
   }
 });
 
+// Создание таблиц
 db.serialize(() => {
+  // db.run(`DROP TABLE IF EXISTS users`);
   db.run(
     `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -58,7 +60,8 @@ db.serialize(() => {
       iqValue INTEGER,
       mode TEXT,
       status TEXT,
-      subscription_id TEXT
+      subscription_id TEXT,
+      customer_id TEXT
     )`
   );
 
@@ -86,10 +89,28 @@ const addUser = (
   iqValue,
   mode,
   status,
-  subscription_id
+  subscription_id,
+  customer_id
 ) => {
+  console.log('Adding user to database:', {
+    id,
+    date,
+    userName,
+    email,
+    payment_method_types,
+    amount_total,
+    amount_subtotal,
+    currency,
+    userId,
+    iqValue,
+    mode,
+    status,
+    subscription_id,
+    customer_id,
+  });
+
   const stmt = db.prepare(
-    'INSERT INTO users (id, date, userName, email, payment_method_types, amount_total, amount_subtotal, currency, userId, iqValue, mode, status, subscription_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO users (id, date, userName, email, payment_method_types, amount_total, amount_subtotal, currency, userId, iqValue, mode, status, subscription_id, customer_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     err => {
       if (err) {
         console.error('Error preparing statement:', err.message);
@@ -110,9 +131,12 @@ const addUser = (
     mode,
     status,
     subscription_id,
+    customer_id,
     err => {
       if (err) {
         console.error('Error inserting user:', err.message);
+      } else {
+        console.log('User inserted successfully');
       }
     }
   );
@@ -124,6 +148,14 @@ const addUser = (
 };
 
 const addBeforeCheckout = (userId, userName, email, date, iqValue) => {
+  console.log('Adding before checkout data:', {
+    userId,
+    userName,
+    email,
+    date,
+    iqValue,
+  });
+
   const stmt = db.prepare(
     'INSERT INTO beforeCheckout (userId, userName, email, date, iqValue) VALUES (?, ?, ?, ?, ?)',
     err => {
@@ -135,6 +167,8 @@ const addBeforeCheckout = (userId, userName, email, date, iqValue) => {
   stmt.run(userId, userName, email, date, iqValue, err => {
     if (err) {
       console.error('Error inserting user before checkout:', err.message);
+    } else {
+      console.log('Before checkout data inserted successfully');
     }
   });
   stmt.finalize(err => {
@@ -145,10 +179,13 @@ const addBeforeCheckout = (userId, userName, email, date, iqValue) => {
 };
 
 const getUserByEmail = (email, callback) => {
+  console.log('Retrieving user by email:', email);
+
   db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
     if (err) {
       console.error('Error retrieving user:', err.message);
     }
+    console.log('Retrieved user:', row);
     callback(err, row);
   });
 };
@@ -192,20 +229,26 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       ? stripeLive
       : stripeDev;
 
+    console.log('Creating Stripe customer for email:', email);
+
     // Создание клиента
     const customer = await stripe.customers.create({
       email: email,
       name: userName,
     });
 
+    console.log('Stripe customer created:', customer.id);
+
     // Создание подписки с применением купона на первый платеж
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: priceId }],
-      promotion_code: 'promo_1PRUDpRrQfUQC5MYRNrD9i5x', // Укажите ID вашего купона
+      promotion_code: 'promo_1PRUDpRrQfUQC5MYRNrD9i5x', // Укажите ID вашего промокода
       payment_behavior: 'default_incomplete',
       expand: ['latest_invoice.payment_intent'],
     });
+
+    console.log('Stripe subscription created:', subscription.id);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -223,7 +266,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       client_reference_id: subscription.id,
     });
 
-    console.log('Created session:', session);
+    console.log('Stripe checkout session created:', session.id);
 
     // Сохранение данных пользователя в базу данных
     const date = new Date().toISOString();
@@ -240,12 +283,40 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       iqValue,
       session.mode,
       session.status,
-      subscription.id // Использование ID подписки
+      subscription.id, // Использование ID подписки
+      customer.id // Использование ID клиента
     );
 
     res.json({ id: session.id });
   } catch (error) {
     console.error('Error creating checkout session:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint to create a billing portal session
+app.post('/create-billing-portal-session', validateApiKey, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    getUserByEmail(email, async (err, user) => {
+      if (err || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const stripe = req.headers.origin.includes('iq-check140.com')
+        ? stripeLive
+        : stripeDev;
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: user.customer_id,
+        return_url: `${req.headers.origin}/#/home`,
+      });
+
+      res.json({ url: session.url });
+    });
+  } catch (error) {
+    console.error('Error creating billing portal session:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
