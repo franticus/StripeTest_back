@@ -2,10 +2,10 @@ const stripeLive = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const stripeDev = require('stripe')(process.env.STRIPE_SECRET_KEY_DEV);
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
-// Подключение к базе данных SQLite
+let dbPath;
+
 if (
   fs.existsSync('/data') &&
   fs.existsSync(path.join('/data', 'database.sqlite'))
@@ -23,7 +23,7 @@ const db = new sqlite3.Database(dbPath, err => {
   }
 });
 
-// Функции для работы с базой данных
+// Functions for interacting with the database
 const addUser = (
   id,
   date,
@@ -100,7 +100,7 @@ const getUserByEmail = (email, callback) => {
   });
 };
 
-// Функция для создания Stripe клиента
+// Stripe functions
 const createStripeCustomer = async (email, userName, stripe) => {
   return await stripe.customers.create({
     email: email,
@@ -108,18 +108,16 @@ const createStripeCustomer = async (email, userName, stripe) => {
   });
 };
 
-// Функция для создания подписки Stripe
 const createStripeSubscription = async (customerId, priceId, stripe) => {
   return await stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: priceId }],
-    promotion_code: 'promo_1PRUDpRrQfUQC5MYRNrD9i5x', // Укажите ID вашего промокода
+    promotion_code: 'promo_1PRUDpRrQfUQC5MYRNrD9i5x',
     payment_behavior: 'default_incomplete',
     expand: ['latest_invoice.payment_intent'],
   });
 };
 
-// Функция для создания Stripe сессии
 const createCheckoutSession = async (
   email,
   userId,
@@ -144,7 +142,7 @@ const createCheckoutSession = async (
       },
     ],
     mode: 'subscription',
-    discounts: [{ coupon: '28NLdHOO' }], // Укажите ID вашего купона
+    discounts: [{ coupon: '28NLdHOO' }],
     success_url: `${origin}/#/thanks`,
     cancel_url: `${origin}/#/paywall`,
     customer_email: email,
@@ -172,7 +170,6 @@ const createCheckoutSession = async (
   return session;
 };
 
-// Функция для создания сессии платежного портала
 const createBillingPortalSession = async (email, origin) => {
   return new Promise((resolve, reject) => {
     getUserByEmail(email, async (err, user) => {
@@ -193,7 +190,6 @@ const createBillingPortalSession = async (email, origin) => {
   });
 };
 
-// Функция для проверки подписки
 const checkSubscription = email => {
   return new Promise((resolve, reject) => {
     getUserByEmail(email, (err, user) => {

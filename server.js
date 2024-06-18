@@ -85,7 +85,7 @@ app.post('/create-billing-portal-session', validateApiKey, async (req, res) => {
     const url = await stripeService.createBillingPortalSession(email, origin);
     res.json({ url });
   } catch (error) {
-    res.status(500).json({ error: error });
+    res.status(500).json({ error: error.message });
   }
 });
 
