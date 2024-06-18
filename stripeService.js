@@ -53,14 +53,30 @@ const createCheckoutSession = async (
   return session;
 };
 
-const createBillingPortalSession = async (customerId, origin) => {
+const createBillingPortalSession = async (email, origin) => {
   const stripe = origin.includes('iq-check140.com') ? stripeLive : stripeDev;
-  const session = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${origin}/#/home`,
-  });
 
-  return session.url;
+  try {
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+
+    if (customers.data.length === 0) {
+      throw new Error('User not found');
+    }
+
+    const customerId = customers.data[0].id;
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${origin}/#/home`,
+    });
+
+    return session.url;
+  } catch (error) {
+    console.error('Error creating billing portal session: ', error);
+    throw error;
+  }
 };
 
 const checkSubscription = async email => {

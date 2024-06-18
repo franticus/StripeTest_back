@@ -129,13 +129,6 @@ app.post(
   }
 );
 
-// Endpoint to save before checkout data
-app.post('/before-checkout', (req, res) => {
-  const { userId, userName, email, date, iqValue } = req.body;
-  stripeService.addBeforeCheckout(userId, userName, email, date, iqValue);
-  res.status(200).send('User data saved before checkout');
-});
-
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
