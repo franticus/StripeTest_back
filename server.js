@@ -5,7 +5,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const app = express();
-const stripeService = require('./stripeService');
+const stripeLive = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripeDev = require('stripe')(process.env.STRIPE_SECRET_KEY_DEV);
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -60,15 +61,36 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
     const { email, userId, priceId, iqValue, userName } = req.body;
     const origin = req.headers.origin;
+    const stripe = origin.includes('iq-check140.com') ? stripeLive : stripeDev;
 
-    const session = await stripeService.createCheckoutSession(
-      email,
-      userId,
-      priceId,
-      iqValue,
-      userName,
-      origin
-    );
+    const customer = await stripe.customers.create({
+      email: email,
+      name: userName,
+    });
+
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [{ price: priceId }],
+      promotion_code: 'promo_1PRUDpRrQfUQC5MYRNrD9i5x',
+      payment_behavior: 'default_incomplete',
+      expand: ['latest_invoice.payment_intent'],
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      discounts: [{ coupon: '28NLdHOO' }],
+      success_url: `${origin}/#/thanks`,
+      cancel_url: `${origin}/#/paywall`,
+      customer_email: email,
+      client_reference_id: subscription.id,
+    });
 
     res.json({ id: session.id });
   } catch (error) {
@@ -81,9 +103,20 @@ app.post('/create-billing-portal-session', validateApiKey, async (req, res) => {
   try {
     const { email } = req.body;
     const origin = req.headers.origin;
+    const stripe = origin.includes('iq-check140.com') ? stripeLive : stripeDev;
 
-    const url = await stripeService.createBillingPortalSession(email, origin);
-    res.json({ url });
+    const customer = await stripe.customers.list({ email: email });
+
+    if (customer.data.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customer.data[0].id,
+      return_url: `${origin}/#/home`,
+    });
+
+    res.json({ url: session.url });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -93,10 +126,56 @@ app.post('/create-billing-portal-session', validateApiKey, async (req, res) => {
 app.post('/check-subscription', async (req, res) => {
   try {
     const { email } = req.body;
-    const result = await stripeService.checkSubscription(email);
-    res.json(result);
+    const stripe = req.headers.origin.includes('iq-check140.com')
+      ? stripeLive
+      : stripeDev;
+
+    const customer = await stripe.customers.list({ email: email });
+
+    if (customer.data.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.data[0].id,
+      status: 'active',
+    });
+
+    const hasSubscription = subscriptions.data.length > 0;
+    res.json({ hasSubscription });
   } catch (error) {
     res.status(404).json({ error: 'User not found' });
+  }
+});
+
+// Endpoint to cancel subscription
+app.post('/cancel-subscription', validateApiKey, async (req, res) => {
+  try {
+    const { email } = req.body;
+    const origin = req.headers.origin;
+    const stripe = origin.includes('iq-check140.com') ? stripeLive : stripeDev;
+
+    const customer = await stripe.customers.list({ email: email });
+
+    if (customer.data.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.data[0].id,
+      status: 'active',
+    });
+
+    if (subscriptions.data.length === 0) {
+      return res.status(404).json({ error: 'No active subscriptions found' });
+    }
+
+    const subscriptionId = subscriptions.data[0].id;
+    const deletedSubscription = await stripe.subscriptions.del(subscriptionId);
+
+    res.json({ success: true, subscription: deletedSubscription });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -124,6 +203,7 @@ app.post(
       return response.sendStatus(400);
     }
 
+    // Handle the event
     stripeService.handleWebhookEvent(event, request.headers.origin);
     response.sendStatus(200);
   }
