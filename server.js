@@ -4,9 +4,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const getStripeConfig = require('./key.js'); // Импорт функции из key.js
+
 const app = express();
-const stripeLive = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const stripeDev = require('stripe')(process.env.STRIPE_SECRET_KEY_DEV);
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -59,9 +59,9 @@ const validateApiKey = (req, res, next) => {
 // Endpoint to create a checkout session
 app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
-    const { email, userId, priceId, iqValue, userName } = req.body;
+    const { email, priceId, userName } = req.body;
     const origin = req.headers.origin;
-    const stripe = origin.includes('iq-check140.com') ? stripeLive : stripeDev;
+    const { stripe, idPromo, idCoupon } = getStripeConfig(origin);
 
     const customer = await stripe.customers.create({
       email: email,
@@ -71,7 +71,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: priceId }],
-      promotion_code: 'promo_1PRUDpRrQfUQC5MYRNrD9i5x',
+      promotion_code: idPromo,
       payment_behavior: 'default_incomplete',
       expand: ['latest_invoice.payment_intent'],
     });
@@ -85,7 +85,7 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
         },
       ],
       mode: 'subscription',
-      discounts: [{ coupon: '28NLdHOO' }],
+      discounts: [{ coupon: idCoupon }],
       success_url: `${origin}/#/thanks`,
       cancel_url: `${origin}/#/paywall`,
       customer_email: email,
@@ -103,7 +103,7 @@ app.post('/create-billing-portal-session', validateApiKey, async (req, res) => {
   try {
     const { email } = req.body;
     const origin = req.headers.origin;
-    const stripe = origin.includes('iq-check140.com') ? stripeLive : stripeDev;
+    const { stripe } = getStripeConfig(origin);
 
     const customer = await stripe.customers.list({ email: email });
 
@@ -126,9 +126,7 @@ app.post('/create-billing-portal-session', validateApiKey, async (req, res) => {
 app.post('/check-subscription', async (req, res) => {
   try {
     const { email } = req.body;
-    const stripe = req.headers.origin.includes('iq-check140.com')
-      ? stripeLive
-      : stripeDev;
+    const { stripe } = getStripeConfig(req.headers.origin);
 
     const customer = await stripe.customers.list({ email: email });
 
@@ -153,7 +151,7 @@ app.post('/cancel-subscription', validateApiKey, async (req, res) => {
   try {
     const { email } = req.body;
     const origin = req.headers.origin;
-    const stripe = origin.includes('iq-check140.com') ? stripeLive : stripeDev;
+    const { stripe } = getStripeConfig(origin);
 
     const customer = await stripe.customers.list({ email: email });
 
@@ -190,9 +188,7 @@ app.post(
 
     try {
       const origin = request.headers.origin;
-      const stripe = origin.includes('iq-check140.com')
-        ? stripeLive
-        : stripeDev;
+      const { stripe } = getStripeConfig(origin);
 
       event = stripe.webhooks.constructEvent(
         request.body,
