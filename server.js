@@ -86,8 +86,8 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       ],
       mode: 'subscription',
       discounts: [{ coupon: idCoupon }],
-      success_url: `${origin}/#/thanks`,
-      cancel_url: `${origin}/#/paywall`,
+      success_url: `${origin}/thanks`,
+      cancel_url: `${origin}/paywall`,
       customer_email: email,
       client_reference_id: subscription.id,
     });
@@ -113,7 +113,7 @@ app.post('/create-billing-portal-session', validateApiKey, async (req, res) => {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customer.data[0].id,
-      return_url: `${origin}/#/home`,
+      return_url: `${origin}/home`,
     });
 
     res.json({ url: session.url });
