@@ -177,6 +177,23 @@ app.post('/cancel-subscription', validateApiKey, async (req, res) => {
   }
 });
 
+app.get('/subscription-info', async (req, res) => {
+  try {
+    const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
+
+    const subscriptionInfo = {
+      trialPrice: 190, // Trial price in cents
+      regularPrice: 3499, // Regular price in cents
+      currency: 'usd',
+      coupon: idCoupon,
+    };
+
+    res.json(subscriptionInfo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/create-subscription', async (req, res) => {
   try {
     const { token, email, name } = req.body;
