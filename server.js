@@ -199,6 +199,7 @@ app.get('/subscription-info', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 app.post('/create-subscription', async (req, res) => {
   try {
     const { token, email, name } = req.body;
