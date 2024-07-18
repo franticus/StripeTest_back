@@ -179,7 +179,13 @@ app.post('/cancel-subscription', validateApiKey, async (req, res) => {
 
 app.get('/subscription-info', async (req, res) => {
   try {
-    const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
+    const origin = req.headers.origin;
+
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
+
+    const { stripe, idCoupon } = getStripeConfig(origin);
 
     const subscriptionInfo = {
       trialPrice: 190, // Trial price in cents
@@ -193,7 +199,6 @@ app.get('/subscription-info', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 app.post('/create-subscription', async (req, res) => {
   try {
     const { token, email, name } = req.body;
