@@ -272,6 +272,8 @@ app.post(
   }
 );
 
+app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
+
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
