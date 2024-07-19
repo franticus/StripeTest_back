@@ -200,19 +200,58 @@ app.get('/subscription-info', async (req, res) => {
   }
 });
 
+// app.post('/create-subscription', async (req, res) => {
+//   try {
+//     const { token, email, name } = req.body;
+//     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
+
+//     // Create a customer
+//     const customer = await stripe.customers.create({
+//       email,
+//       name,
+//       source: token,
+//     });
+
+//     // Create a subscription with a fixed coupon
+//     const subscription = await stripe.subscriptions.create({
+//       customer: customer.id,
+//       items: [{ price: 'price_1PQBhPRrQfUQC5MYqbQ7MyWh' }], // Replace with your price ID
+//       expand: ['latest_invoice.payment_intent'],
+//       coupon: idCoupon, // Use the coupon from the configuration
+//     });
+
+//     res.json({ success: true, subscription });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
 app.post('/create-subscription', async (req, res) => {
   try {
-    const { token, email, name } = req.body;
+    const { payment_method_id, email } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
 
-    // Create a customer
-    const customer = await stripe.customers.create({
-      email,
-      name,
-      source: token,
+    // Create a customer if it doesn't exist
+    let customer = await stripe.customers.list({ email });
+    if (customer.data.length === 0) {
+      customer = await stripe.customers.create({ email });
+    } else {
+      customer = customer.data[0];
+    }
+
+    // Attach the payment method to the customer
+    await stripe.paymentMethods.attach(payment_method_id, {
+      customer: customer.id,
     });
 
-    // Create a subscription with a fixed coupon
+    // Set the default payment method on the customer
+    await stripe.customers.update(customer.id, {
+      invoice_settings: {
+        default_payment_method: payment_method_id,
+      },
+    });
+
+    // Create a subscription
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: 'price_1PQBhPRrQfUQC5MYqbQ7MyWh' }], // Replace with your price ID
