@@ -294,10 +294,13 @@ app.post('/create-payment-intent', async (req, res) => {
 
 app.post('/create-subscription', async (req, res) => {
   try {
-    const { payment_method_id, email } = req.body;
+    const { paymentMethodId, email } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
 
-    // Create a customer if it doesn't exist
+    if (!paymentMethodId) {
+      throw new Error('paymentMethodId is required');
+    }
+
     let customer = await stripe.customers.list({ email });
     if (customer.data.length === 0) {
       customer = await stripe.customers.create({ email });
@@ -305,24 +308,21 @@ app.post('/create-subscription', async (req, res) => {
       customer = customer.data[0];
     }
 
-    // Attach the payment method to the customer
-    await stripe.paymentMethods.attach(payment_method_id, {
+    await stripe.paymentMethods.attach(paymentMethodId, {
       customer: customer.id,
     });
 
-    // Set the default payment method on the customer
     await stripe.customers.update(customer.id, {
       invoice_settings: {
-        default_payment_method: payment_method_id,
+        default_payment_method: paymentMethodId,
       },
     });
 
-    // Create a subscription
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [{ price: 'price_1PQBhPRrQfUQC5MYqbQ7MyWh' }], // Replace with your price ID
+      items: [{ price: 'price_1PQBhPRrQfUQC5MYqbQ7MyWh' }],
+      coupon: idCoupon,
       expand: ['latest_invoice.payment_intent'],
-      coupon: idCoupon, // Use the coupon from the configuration
     });
 
     res.json({ success: true, subscription });
@@ -349,7 +349,6 @@ app.post('/process-payment', async (req, res) => {
   }
 });
 
-// Endpoint to handle Stripe webhooks
 app.post(
   '/webhook',
   bodyParser.raw({ type: 'application/json' }),
