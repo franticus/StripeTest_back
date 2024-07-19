@@ -213,14 +213,12 @@ app.post('/create-payment-intent', async (req, res) => {
       customer = customer.data[0];
     }
 
-    // Create a PaymentIntent with the order amount and currency, and apply the coupon
+    // Create a PaymentIntent with the order amount and currency
     const paymentIntent = await stripe.paymentIntents.create({
       amount: 190, // Сумма в центах
       currency: 'usd',
       customer: customer.id,
       payment_method: paymentMethodId,
-      off_session: true,
-      confirm: true,
       metadata: {
         coupon: idCoupon, // Сохранение купона в метаданных
       },
@@ -233,6 +231,40 @@ app.post('/create-payment-intent', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// app.post('/create-payment-intent', async (req, res) => {
+//   try {
+//     const { email, paymentMethodId } = req.body;
+//     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
+
+//     // Create a customer if it doesn't exist
+//     let customer = await stripe.customers.list({ email });
+//     if (customer.data.length === 0) {
+//       customer = await stripe.customers.create({ email });
+//     } else {
+//       customer = customer.data[0];
+//     }
+
+//     // Create a PaymentIntent with the order amount and currency, and apply the coupon
+//     const paymentIntent = await stripe.paymentIntents.create({
+//       amount: 190, // Сумма в центах
+//       currency: 'usd',
+//       customer: customer.id,
+//       payment_method: paymentMethodId,
+//       off_session: true,
+//       confirm: true,
+//       metadata: {
+//         coupon: idCoupon, // Сохранение купона в метаданных
+//       },
+//     });
+
+//     res.json({
+//       clientSecret: paymentIntent.client_secret,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
 // app.post('/create-subscription', async (req, res) => {
 //   try {
