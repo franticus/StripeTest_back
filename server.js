@@ -205,7 +205,6 @@ app.post('/create-payment-intent', async (req, res) => {
     const { email, paymentMethodId } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
 
-    // Create a customer if it doesn't exist
     let customer = await stripe.customers.list({ email });
     if (customer.data.length === 0) {
       customer = await stripe.customers.create({ email });
@@ -213,14 +212,13 @@ app.post('/create-payment-intent', async (req, res) => {
       customer = customer.data[0];
     }
 
-    // Create a PaymentIntent with the order amount and currency
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 190, // Сумма в центах
+      amount: 190,
       currency: 'usd',
       customer: customer.id,
       payment_method: paymentMethodId,
       metadata: {
-        coupon: idCoupon, // Сохранение купона в метаданных
+        coupon: idCoupon,
       },
     });
 
