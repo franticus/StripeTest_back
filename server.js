@@ -252,6 +252,23 @@ app.post('/create-payment-intent', async (req, res) => {
   }
 });
 
+app.post('/create-customer', async (req, res) => {
+  try {
+    const { token, email, name } = req.body;
+    const { stripe } = getStripeConfig(req.headers.origin);
+
+    const customer = await stripe.customers.create({
+      email,
+      name,
+      source: token,
+    });
+
+    res.json({ success: true, customer });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/create-subscription', async (req, res) => {
   try {
     const { token, email, name, priceId } = req.body;
@@ -262,14 +279,12 @@ app.post('/create-subscription', async (req, res) => {
       return res.status(400).json({ error: 'Origin header is missing' });
     }
 
-    // Создаем клиента
-    let customer = await stripe.customers.create({
+    const customer = await stripe.customers.create({
       email: email,
       name: name,
       source: token,
     });
 
-    // Создаем подписку
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: priceId }],
