@@ -279,12 +279,21 @@ app.post('/create-subscription', async (req, res) => {
       return res.status(400).json({ error: 'Origin header is missing' });
     }
 
+    // Создаем клиента
     const customer = await stripe.customers.create({
       email: email,
       name: name,
-      source: token,
+      source: token, // Используем токен для создания клиента
     });
 
+    // Обновляем клиента для установки способа оплаты по умолчанию
+    await stripe.customers.update(customer.id, {
+      invoice_settings: {
+        default_payment_method: token,
+      },
+    });
+
+    // Создаем подписку
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: priceId }],
