@@ -306,6 +306,7 @@ app.post('/create-subscription', async (req, res) => {
       customer: customer.id,
       items: [{ price: priceId }],
       coupon: idCoupon,
+      payment_behavior: 'default_incomplete',
       expand: ['latest_invoice.payment_intent'],
     });
 
