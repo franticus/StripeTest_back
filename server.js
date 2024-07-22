@@ -254,7 +254,7 @@ app.post('/create-payment-intent', async (req, res) => {
 
 app.post('/create-subscription', async (req, res) => {
   try {
-    const { paymentMethodId, email } = req.body;
+    const { paymentMethodId, email, priceId } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
     const origin = req.headers.origin;
 
@@ -285,7 +285,7 @@ app.post('/create-subscription', async (req, res) => {
 
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [{ price: 'price_1PQBhPRrQfUQC5MYqbQ7MyWh' }],
+      items: [{ price: priceId }],
       coupon: idCoupon,
       expand: ['latest_invoice.payment_intent'],
     });
