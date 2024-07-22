@@ -258,9 +258,8 @@ app.post('/create-customer', async (req, res) => {
     const { stripe } = getStripeConfig(req.headers.origin);
 
     const customer = await stripe.customers.create({
-      email,
-      name,
-      source: token,
+      email: email,
+      name: name,
     });
 
     res.json({ success: true, customer });
@@ -283,13 +282,22 @@ app.post('/create-subscription', async (req, res) => {
     const customer = await stripe.customers.create({
       email: email,
       name: name,
-      source: token, // Используем токен для создания клиента
     });
 
-    // Обновляем клиента для установки способа оплаты по умолчанию
+    // Привязываем способ оплаты к клиенту
+    const paymentMethod = await stripe.paymentMethods.create({
+      type: 'card',
+      card: { token: token },
+    });
+
+    await stripe.paymentMethods.attach(paymentMethod.id, {
+      customer: customer.id,
+    });
+
+    // Устанавливаем способ оплаты по умолчанию
     await stripe.customers.update(customer.id, {
       invoice_settings: {
-        default_payment_method: token,
+        default_payment_method: paymentMethod.id,
       },
     });
 
