@@ -254,7 +254,7 @@ app.post('/create-payment-intent', async (req, res) => {
 
 app.post('/create-subscription', async (req, res) => {
   try {
-    const { paymentMethodId, email, priceId } = req.body;
+    const { token, email, name, priceId } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
     const origin = req.headers.origin;
 
@@ -262,27 +262,14 @@ app.post('/create-subscription', async (req, res) => {
       return res.status(400).json({ error: 'Origin header is missing' });
     }
 
-    if (!paymentMethodId) {
-      throw new Error('paymentMethodId is required');
-    }
-
-    let customer = await stripe.customers.list({ email });
-    if (customer.data.length === 0) {
-      customer = await stripe.customers.create({ email });
-    } else {
-      customer = customer.data[0];
-    }
-
-    await stripe.paymentMethods.attach(paymentMethodId, {
-      customer: customer.id,
+    // Создаем клиента
+    let customer = await stripe.customers.create({
+      email: email,
+      name: name,
+      source: token,
     });
 
-    await stripe.customers.update(customer.id, {
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
-    });
-
+    // Создаем подписку
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: priceId }],
@@ -310,7 +297,7 @@ app.post('/process-payment', async (req, res) => {
       amount: 299,
       currency: 'usd',
       source: token,
-      description: '7-Day Trial for IQMaze',
+      description: '1-Month Trial for IQMaze',
     });
 
     res.json({ success: true, charge });
