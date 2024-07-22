@@ -63,6 +63,10 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
     const origin = req.headers.origin;
     const { stripe, idPromo, idCoupon } = getStripeConfig(origin);
 
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
+
     const customer = await stripe.customers.create({
       email: email,
       name: userName,
@@ -105,6 +109,10 @@ app.post('/create-billing-portal-session', validateApiKey, async (req, res) => {
     const origin = req.headers.origin;
     const { stripe } = getStripeConfig(origin);
 
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
+
     const customer = await stripe.customers.list({ email: email });
 
     if (customer.data.length === 0) {
@@ -127,6 +135,11 @@ app.post('/check-subscription', async (req, res) => {
   try {
     const { email } = req.body;
     const { stripe } = getStripeConfig(req.headers.origin);
+    const origin = req.headers.origin;
+
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
 
     const customer = await stripe.customers.list({ email: email });
 
@@ -152,6 +165,10 @@ app.post('/cancel-subscription', validateApiKey, async (req, res) => {
     const { email } = req.body;
     const origin = req.headers.origin;
     const { stripe } = getStripeConfig(origin);
+
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
 
     const customer = await stripe.customers.list({ email: email });
 
@@ -204,6 +221,11 @@ app.post('/create-payment-intent', async (req, res) => {
   try {
     const { email, paymentMethodId } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
+    const origin = req.headers.origin;
+
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
 
     let customer = await stripe.customers.list({ email });
     if (customer.data.length === 0) {
@@ -230,70 +252,15 @@ app.post('/create-payment-intent', async (req, res) => {
   }
 });
 
-// app.post('/create-payment-intent', async (req, res) => {
-//   try {
-//     const { email, paymentMethodId } = req.body;
-//     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
-
-//     // Create a customer if it doesn't exist
-//     let customer = await stripe.customers.list({ email });
-//     if (customer.data.length === 0) {
-//       customer = await stripe.customers.create({ email });
-//     } else {
-//       customer = customer.data[0];
-//     }
-
-//     // Create a PaymentIntent with the order amount and currency, and apply the coupon
-//     const paymentIntent = await stripe.paymentIntents.create({
-//       amount: 190, // Сумма в центах
-//       currency: 'usd',
-//       customer: customer.id,
-//       payment_method: paymentMethodId,
-//       off_session: true,
-//       confirm: true,
-//       metadata: {
-//         coupon: idCoupon, // Сохранение купона в метаданных
-//       },
-//     });
-
-//     res.json({
-//       clientSecret: paymentIntent.client_secret,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.post('/create-subscription', async (req, res) => {
-//   try {
-//     const { token, email, name } = req.body;
-//     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
-
-//     // Create a customer
-//     const customer = await stripe.customers.create({
-//       email,
-//       name,
-//       source: token,
-//     });
-
-//     // Create a subscription with a fixed coupon
-//     const subscription = await stripe.subscriptions.create({
-//       customer: customer.id,
-//       items: [{ price: 'price_1PQBhPRrQfUQC5MYqbQ7MyWh' }], // Replace with your price ID
-//       expand: ['latest_invoice.payment_intent'],
-//       coupon: idCoupon, // Use the coupon from the configuration
-//     });
-
-//     res.json({ success: true, subscription });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
 app.post('/create-subscription', async (req, res) => {
   try {
     const { paymentMethodId, email } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
+    const origin = req.headers.origin;
+
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
 
     if (!paymentMethodId) {
       throw new Error('paymentMethodId is required');
@@ -333,6 +300,11 @@ app.post('/process-payment', async (req, res) => {
   try {
     const { token } = req.body;
     const { stripe } = getStripeConfig(req.headers.origin);
+    const origin = req.headers.origin;
+
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
 
     const charge = await stripe.charges.create({
       amount: 299,
@@ -352,6 +324,11 @@ app.post(
   bodyParser.raw({ type: 'application/json' }),
   (request, response) => {
     const sig = request.headers['stripe-signature'];
+    const origin = req.headers.origin;
+
+    if (!origin) {
+      return res.status(400).json({ error: 'Origin header is missing' });
+    }
 
     let event;
 

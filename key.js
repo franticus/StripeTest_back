@@ -8,6 +8,10 @@ const idCouponProd = process.env.ID_COUPON_PROD;
 const idCouponDev = process.env.ID_COUPON_DEV;
 
 const getStripeConfig = origin => {
+  if (!origin) {
+    throw new Error('Origin is undefined');
+  }
+
   const isProd = origin.includes('iq-check140.com');
   return {
     stripe: isProd ? stripeProd : stripeDev,
