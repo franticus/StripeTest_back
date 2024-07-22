@@ -303,29 +303,6 @@ app.post('/create-subscription', async (req, res) => {
   }
 });
 
-app.post('/process-payment', async (req, res) => {
-  try {
-    const { token } = req.body;
-    const { stripe } = getStripeConfig(req.headers.origin);
-    const origin = req.headers.origin;
-
-    if (!origin) {
-      return res.status(400).json({ error: 'Origin header is missing' });
-    }
-
-    const charge = await stripe.charges.create({
-      amount: 299,
-      currency: 'usd',
-      source: token,
-      description: '1-Month Trial for IQMaze',
-    });
-
-    res.json({ success: true, charge });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 app.post(
   '/webhook',
   bodyParser.raw({ type: 'application/json' }),
