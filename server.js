@@ -294,7 +294,10 @@ app.post('/create-subscription', async (req, res) => {
       payment_behavior: 'default_incomplete',
     });
 
-    res.json({ success: true, subscription });
+    const clientSecret =
+      subscription.latest_invoice.payment_intent.client_secret;
+
+    res.json({ success: true, subscription, clientSecret });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
