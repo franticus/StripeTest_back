@@ -270,7 +270,7 @@ app.post('/create-customer', async (req, res) => {
 
 app.post('/create-subscription', async (req, res) => {
   try {
-    const { token, email, name, priceId } = req.body;
+    const { customerId, paymentMethodId, priceId } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
     const origin = req.headers.origin;
 
@@ -278,35 +278,23 @@ app.post('/create-subscription', async (req, res) => {
       return res.status(400).json({ error: 'Origin header is missing' });
     }
 
-    // Создаем клиента
-    const customer = await stripe.customers.create({
-      email: email,
-      name: name,
-    });
-
     // Привязываем способ оплаты к клиенту
-    const paymentMethod = await stripe.paymentMethods.create({
-      type: 'card',
-      card: { token: token },
-    });
-
-    await stripe.paymentMethods.attach(paymentMethod.id, {
-      customer: customer.id,
+    await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: customerId,
     });
 
     // Устанавливаем способ оплаты по умолчанию
-    await stripe.customers.update(customer.id, {
+    await stripe.customers.update(customerId, {
       invoice_settings: {
-        default_payment_method: paymentMethod.id,
+        default_payment_method: paymentMethodId,
       },
     });
 
     // Создаем подписку
     const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
+      customer: customerId,
       items: [{ price: priceId }],
       coupon: idCoupon,
-      payment_behavior: 'default_incomplete',
       expand: ['latest_invoice.payment_intent'],
     });
 
