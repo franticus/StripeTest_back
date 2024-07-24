@@ -270,6 +270,7 @@ app.post('/create-customer', async (req, res) => {
 });
 
 app.post('/create-subscription', async (req, res) => {
+  //decline
   try {
     const { paymentMethodId, priceId, email, name } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
