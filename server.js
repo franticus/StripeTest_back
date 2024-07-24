@@ -271,15 +271,23 @@ app.post('/create-customer', async (req, res) => {
 
 app.post('/create-subscription', async (req, res) => {
   try {
-    const { customerId, paymentMethodId, priceId } = req.body;
+    const { paymentMethodId, priceId, email, name } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
+
+    // Проверка наличия клиента
+    let customer = await stripe.customers.list({ email });
+    if (customer.data.length === 0) {
+      customer = await stripe.customers.create({ email, name });
+    } else {
+      customer = customer.data[0];
+    }
 
     // Привязываем платежный метод к клиенту и устанавливаем его по умолчанию
     await stripe.paymentMethods.attach(paymentMethodId, {
-      customer: customerId,
+      customer: customer.id,
     });
 
-    await stripe.customers.update(customerId, {
+    await stripe.customers.update(customer.id, {
       invoice_settings: {
         default_payment_method: paymentMethodId,
       },
@@ -287,7 +295,7 @@ app.post('/create-subscription', async (req, res) => {
 
     // Создаем подписку с купоном
     const subscription = await stripe.subscriptions.create({
-      customer: customerId,
+      customer: customer.id,
       items: [{ price: priceId }],
       coupon: idCoupon,
       expand: ['latest_invoice.payment_intent'],
