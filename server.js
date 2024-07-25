@@ -208,7 +208,7 @@ app.get('/subscription-info', async (req, res) => {
     const { stripe, idCoupon } = getStripeConfig(origin);
 
     const subscriptionInfo = {
-      trialPrice: 190, // Trial price in cents
+      trialPrice: 90, // Trial price in cents
       regularPrice: 3499, // Regular price in cents
       currency: 'usd',
       coupon: idCoupon,
@@ -238,7 +238,7 @@ app.post('/create-payment-intent', async (req, res) => {
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 190,
+      amount: 90,
       currency: 'usd',
       customer: customer.id,
       payment_method: paymentMethodId,
