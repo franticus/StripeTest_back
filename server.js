@@ -59,7 +59,7 @@ const validateApiKey = (req, res, next) => {
 // Endpoint to create a checkout session
 app.post('/create-checkout-session', validateApiKey, async (req, res) => {
   try {
-    const { email, priceId, userName } = req.body;
+    const { email, priceId, userName, urlParams } = req.body;
     const origin = req.headers.origin;
     const { stripe, idPromo, idCoupon } = getStripeConfig(origin);
 
@@ -80,6 +80,9 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       expand: ['latest_invoice.payment_intent'],
     });
 
+    const successUrl = `${origin}/thanks${urlParams ? `?${urlParams}` : ''}`;
+    const cancelUrl = `${origin}/paywall${urlParams ? `?${urlParams}` : ''}`;
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -90,8 +93,8 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       ],
       mode: 'subscription',
       discounts: [{ coupon: idCoupon }],
-      success_url: `${origin}/thanks`,
-      cancel_url: `${origin}/paywall`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       customer_email: email,
       client_reference_id: subscription.id,
     });
