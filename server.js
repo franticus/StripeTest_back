@@ -270,7 +270,6 @@ app.post('/create-customer', async (req, res) => {
 });
 
 app.post('/create-subscription', async (req, res) => {
-  //decline
   try {
     const { paymentMethodId, priceId, email, name } = req.body;
     const { stripe, idCoupon } = getStripeConfig(req.headers.origin);
@@ -292,6 +291,8 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: {
         default_payment_method: paymentMethodId,
       },
+      email: email,
+      name: name,
     });
 
     // Создаем подписку с купоном
