@@ -1,5 +1,5 @@
+//25.07.2024 Work apple pay
 require('dotenv').config();
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
