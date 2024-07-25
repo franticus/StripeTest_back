@@ -31,8 +31,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.set('trust proxy', true);
-
 // Endpoint to retrieve the API key
 app.get('/get-api-key', (req, res) => {
   res.json({ apiKey: process.env.MY_API_KEY });
@@ -96,9 +94,6 @@ app.post('/create-checkout-session', validateApiKey, async (req, res) => {
       cancel_url: `${origin}/paywall`,
       customer_email: email,
       client_reference_id: subscription.id,
-      metadata: {
-        ip: req.ip, // передача IP-адреса
-      },
     });
 
     res.json({ id: session.id });
@@ -246,7 +241,6 @@ app.post('/create-payment-intent', async (req, res) => {
       payment_method: paymentMethodId,
       metadata: {
         coupon: idCoupon,
-        ip: req.ip, // передача IP-адреса
       },
     });
 
@@ -307,9 +301,6 @@ app.post('/create-subscription', async (req, res) => {
       coupon: idCoupon,
       expand: ['latest_invoice.payment_intent'],
       payment_behavior: 'default_incomplete',
-      metadata: {
-        ip: req.ip, // передача IP-адреса
-      },
     });
 
     const clientSecret =
@@ -326,7 +317,7 @@ app.post(
   bodyParser.raw({ type: 'application/json' }),
   (request, response) => {
     const sig = request.headers['stripe-signature'];
-    const origin = request.headers.origin;
+    const origin = req.headers.origin;
 
     if (!origin) {
       return res.status(400).json({ error: 'Origin header is missing' });
@@ -335,6 +326,7 @@ app.post(
     let event;
 
     try {
+      const origin = request.headers.origin;
       const { stripe } = getStripeConfig(origin);
 
       event = stripe.webhooks.constructEvent(
@@ -347,7 +339,7 @@ app.post(
     }
 
     // Handle the event
-    stripeService.handleWebhookEvent(event, origin);
+    stripeService.handleWebhookEvent(event, request.headers.origin);
     response.sendStatus(200);
   }
 );
